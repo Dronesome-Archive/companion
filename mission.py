@@ -1,57 +1,58 @@
-from enum import Enum
 from mavsdk.mission import MissionItem
-import port
+from port import Port
 
-class Status(Enum):
-	STARTING = 0
-	FLYING = 1
-	LANDING = 2
-	FINISHED = 3
 
-# equivalent to mavsdk.mission: One flight, from takeoff to landed
+# equivalent to mavsdk.mission: one flight, from takeoff to landed
 class Mission:
 
-	relativeAltitude = 30
-	speed = 10
+	RELATIVE_ALTITUDE = 30
+	SPEED = 10
+	ACCEPTANCE_RADIUS = 10
 
 	# construct Mission instance from an HTTP response
 	def __init__(self, raw, battery):
-		self.id = raw['id'],
-		self.waypoints = [(coords[0], coords[1]) for coords in raw['waypoints']],
-		self.goal = Port(raw['port']['id'], (raw['port']['coords'][0], raw['port']['coords'][1])),
+		self.id = raw['id']
+		self.start = Port(raw['start']['id'], (raw['start']['pos'][0], raw['start']['pos'][1]))
+		self.waypoints = [(pos[0], pos[1]) for pos in raw['waypoints']]
+		self.goal = Port(raw['goal']['id'], (raw['goal']['pos'][0], raw['goal']['pos'][1]))
 		self.batteryStart = battery
-		self.status = Status.STARTING
 
 	# get list of mavsdk.mission.MissionItem according to self.waypoints
-	def getItems():
+	def get_items(self):
 		items = []
 
+		# TODO: if the drone doesn't rise to the relative altitude right away, add starting waypoint
+
 		# append in-between waypoints
-		for coords in self.waypoints:
+		for pos in self.waypoints:
 			items.append(MissionItem(
-				coords[0],
-				coords[1],
-				relativeAltitude,
-				speed,
+				pos[0],
+				pos[1],
+				Mission.RELATIVE_ALTITUDE,
+				Mission.SPEED,
 				True,
 				float('nan'),
 				float('nan'),
 				MissionItem.CameraAction.NONE,
 				float('nan'),
+				float('nan'),
+				Mission.ACCEPTANCE_RADIUS,
 				float('nan')
 			))
 		
 		# append final waypoint
 		items.append(MissionItem(
-			self.goal.coords[0],
-			self.goal.coords[1],
-			relativeAltitude,
+			self.goal.pos[0],
+			self.goal.pos[1],
+			Mission.RELATIVE_ALTITUDE,
 			0,
 			False,
 			float('nan'),
 			float('nan'),
 			MissionItem.CameraAction.NONE,
 			float('nan'),
+			float('nan'),
+			Mission.ACCEPTANCE_RADIUS,
 			float('nan')
 		))
 

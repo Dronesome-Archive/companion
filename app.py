@@ -1,48 +1,40 @@
-import requests
-import asyncio
-import json
-from mavsdk import (System, mission, telemetry)
-import mission
 import logging
+import ssl
+
+import mavsdk
+import asyncio
+
+from drone import Drone
+from websocket_connection import WebsocketConnection
+
+# Paths
+LOG = './drone.log'
+CLIENT_CERT_CHAIN = './_ssl/drone.pem'
+CLIENT_CERT_KEY = './_ssl/drone.key'
+SERVER_URL = 'ws://localhost:8000'
+
+# Set up logging
+# logging.basicConfig(
+#     filename=LOG,
+#     level=logging.DEBUG,
+#     format='%(levelname)s %(asctime)s - %(message)s'
+# )
+# logging.getLogger().addHandler(logging.StreamHandler())  # without this errors only go to log, not stderr
+# logger = logging.getLogger()
 
 
-APIENDPOINT = 'https://dronesem.studio'
-APICERT = 'root-ca.crt'
-DRONECERT = './drone.crt'
-DRONEKEY = './drone.key'
-
-drone = System()
-currentMission = None
-
-# set up logging
-logging.basicConfig(
-	filename='./drone.log',
-	level=logging.DEBUG,
-	format='%(levelname)s %(asctime)s - %(message)s'
-)
-logger = logging.getLogger()
+# Create drone
+async def create_drone():
+    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    ssl_context.load_default_certs()
+    ssl_context.load_cert_chain(CLIENT_CERT_CHAIN, CLIENT_CERT_KEY)
+    ssl_context.verify_mode = ssl.VerifyMode.CERT_REQUIRED
+    ssl_context.check_hostname = True
+    connection = WebsocketConnection(SERVER_URL, ssl_context)
+    system = mavsdk.System()
+    await system.connect(system_address="udp://:14540")
+    drone = Drone(system, connection)
+    await drone.heartbeat
 
 
-# update internal mission according to server and forward to pixhawk
-def updateMission():
-
-	# query and decode new mission
-	newMission = None
-	try:
-		req = requests.get(APIENDPOINT + '/drone/mission', cert=(DRONECERT, DRONEKEY), verify=APICERT)
-		battery = await drone.telemetry.battery()
-		newMission = Mission(req.json(), battery)
-	except Exception as e:
-		logger.error('updateMission failed! Err:' + print(e) + 'Req: ' + req.text)
-		return
-	if newMission.id == mission.id:
-		logger.warn('newMission was same as old mission')
-		return
-	
-	# start new mission
-	# TODO: figure out asyncio
-	missionPlan = MissionPlan(currentMission.getItems())
-	await drone.mission.set_return_to_launch_after_mission(True)
-	await drone.mission.upload_mission(missionPlan)
-	await drone.action.arm()
-	await drone.mission.start_mission()
+asyncio.run(create_drone())

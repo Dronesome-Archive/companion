@@ -1,2 +1,4 @@
-venv
-ssl
+_venv
+_ssl
+_examples
+drone.log
