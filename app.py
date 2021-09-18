@@ -1,4 +1,3 @@
-import logging
 import ssl
 
 import mavsdk
@@ -6,6 +5,7 @@ import asyncio
 
 from drone import Drone
 from websocket_connection import WebsocketConnection
+import log
 
 # Paths
 LOG = './drone.log'
@@ -13,18 +13,10 @@ CLIENT_CERT_CHAIN = './_ssl/drone.pem'
 CLIENT_CERT_KEY = './_ssl/drone.key'
 SERVER_URL = 'ws://localhost:8000'
 
-# Set up logging
-# logging.basicConfig(
-#     filename=LOG,
-#     level=logging.DEBUG,
-#     format='%(levelname)s %(asctime)s - %(message)s'
-# )
-# logging.getLogger().addHandler(logging.StreamHandler())  # without this errors only go to log, not stderr
-# logger = logging.getLogger()
-
 
 # Create drone
 async def create_drone():
+    log.setup()
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     ssl_context.load_default_certs()
     ssl_context.load_cert_chain(CLIENT_CERT_CHAIN, CLIENT_CERT_KEY)

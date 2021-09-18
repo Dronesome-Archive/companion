@@ -8,6 +8,7 @@
       <excludeFolder url="file://$MODULE_DIR$/ssl" />
       <excludeFolder url="file://$MODULE_DIR$/_examples" />
       <excludeFolder url="file://$MODULE_DIR$/_ssl" />
+      <excludeFolder url="file://$MODULE_DIR$/_test" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.8 (companion)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

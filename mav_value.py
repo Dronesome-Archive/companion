@@ -1,10 +1,11 @@
 import asyncio
 from time import time
-from logging import getLogger
+
+import log
 
 
 class MavValue:
-    timeout = 10
+    TIMEOUT = 10
 
     def __init__(self, generator):
         self.generator = generator
@@ -16,7 +17,6 @@ class MavValue:
         async for val in self.generator():
             self.val = val
             now = time()
-            if now - self.lastUpdate >= MavValue.timeout:
-                # getLogger().warning(f"Timeout on value {val}, delay {now - self.lastUpdate}")
-                pass
+            if now - self.lastUpdate >= MavValue.TIMEOUT:
+                log.warn('value came too late', now-self.lastUpdate, 'seconds delay')
             self.lastUpdate = now
