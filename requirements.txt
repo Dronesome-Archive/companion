@@ -1,7 +1,9 @@
 aiogrpc==1.8
+bidict==0.21.3
 grpcio==1.39.0
 haversine==2.3.1
 mavsdk==0.19.0
 protobuf==3.17.3
+python-engineio==4.2.1
+python-socketio==5.4.0
 six==1.16.0
-websockets==9.1

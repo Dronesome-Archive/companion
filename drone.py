@@ -5,7 +5,7 @@ from haversine import haversine
 
 import mission
 from mav_value import MavValue
-import message_type
+from message_type import ToServer, ToDrone
 import log
 
 
@@ -33,6 +33,7 @@ class Drone:
         self.current_mission = None
         self.new_mission = None
         self.task = None
+        self.latest_facility = None
 
     # return True if drone successfully landed on the pad; return False if landing failed (e.g. pad not found)
     async def try_landing(self):
@@ -64,7 +65,11 @@ class Drone:
         if self.task is not None:
             self.task.cancel()
         self.task = asyncio.create_task(new)
-        self.server.queue_message(message_type.Outbound.STATUS_UPDATE, new.__name__)
+        self.server.queue_message(ToServer.STATUS_UPDATE, {
+            'status': new.__name__,
+            'latest_facility_id': self.latest_facility.id if self.latest_facility else 0,
+            'goal_facility_id': self.current_mission.goal.id if self.current_mission else 0
+        })
         return True
 
     ####################################################################################################################
@@ -75,28 +80,23 @@ class Drone:
     async def send_heartbeat(self):
         while True:
             if self.position.val and self.battery.val:
-                self.server.queue_message(message_type.Outbound.HEARTBEAT, {
+                self.server.queue_message(ToServer.HEARTBEAT, {
                     'pos': [self.position.val.latitude_deg, self.position.val.longitude_deg],
                     'battery': self.battery.val.remaining_percent
                 })
             await asyncio.sleep(Drone.HEARTBEAT_DELAY)
 
-    # handle messages incoming from the server
+    # we can silently ignore orders from the server if they're stupid
     async def server_consume(self):
         while True:  # async for don't work w/ asyncio.Queue :(
             msg = await self.server.inbox.get()
-            if msg['type'] == message_type.Inbound.EMERGENCY_LAND.value:
+            if msg.msg_type == ToDrone.EMERGENCY_LAND and self.status != self.status_idle:
                 self.set_status(self.status_emergency_landing)
-            elif msg['type'] == message_type.Inbound.RETURN.value:
+            elif msg.msg_type == ToDrone.RETURN and self.status != self.status_idle:
                 self.set_status(self.status_returning)
-            elif msg['type'] == message_type.Inbound.UPDATE.value:
-                self.new_mission = mission.Mission(msg['body'], self.battery.val.remaining_percent)
-                if not self.set_status(self.status_updating):
-                    self.server.queue_message(message_type.Outbound.MISSION_UPDATE, {
-                        'action': 'rejected',
-                        'mission_id': self.new_mission.id,
-                        'port_id': 0
-                    })
+            elif msg.msg_type == ToDrone.UPDATE and self.status == self.status_idle:
+                self.new_mission = mission.Mission(msg.content, self.battery.val.remaining_percent)
+                self.set_status(self.status_updating)
 
     ####################################################################################################################
     # STATUS TASKS
@@ -106,29 +106,19 @@ class Drone:
     async def status_idle(self):
         await self.mav.action.disarm()
 
-    # accept or reject self.new_mission
+    # go en_route on self.new_mission or just stay idle if it's bullshit
     async def status_updating(self):
         current_pos = [self.position.val.latitude_deg, self.position.val.longitude_deg]
         start_dist_km = haversine(current_pos, self.new_mission.start.pos)
         if start_dist_km > Drone.MAX_START_DIST_KM or self.battery.val < Drone.MIN_BATTERY_CHARGE:
             log.warn('new mission rejected', self.new_mission.id)
-            self.server.queue_message(message_type.Outbound.MISSION_UPDATE, {
-                'action': 'rejected',
-                'mission_id': self.new_mission.id,
-                'port_id': 0
-            })
-            self.set_status(self.status_returning)
+            self.set_status(self.status_idle)
         else:
             log.info('new mission', self.new_mission.id)
             self.current_mission = self.new_mission
-            self.server.queue_message(message_type.Outbound.MISSION_UPDATE, {
-                'action': 'accepted',
-                'mission_id': self.current_mission.id,
-                'port_id': 0
-            })
             self.set_status(self.status_en_route)
 
-    # fly self.current_mission and try landing when finished
+    # arm drone, fly self.current_mission and try landing when finished
     async def status_en_route(self):
         mission_plan = mavsdk.mission.MissionPlan(self.current_mission.get_items())
         await self.mav.mission.set_return_to_launch_after_mission(False)
@@ -142,11 +132,8 @@ class Drone:
     # attempt to land and handle failure
     async def status_landing(self):
         if await self.try_landing():
-            self.server.queue_message(message_type.Outbound.MISSION_UPDATE, {
-                'action': 'landed',
-                'mission_id': self.current_mission.id,
-                'port_id': self.current_mission.goal.id
-            })
+            log.info('landed on', self.current_mission.goal.id)
+            self.latest_facility = self.current_mission.goal
             self.set_status(self.status_idle)
         elif not self.current_mission.cancelled:
             log.warn('landing failed, returning')
@@ -187,8 +174,4 @@ class Drone:
     # when emergency landing is completed, notify server and keep calm
     async def status_crashed(self):
         log.warn('crashed')
-        self.server.queue_message(message_type.Outbound.MISSION_UPDATE, {
-            'action': 'crashed',
-            'mission_id': 0,
-            'port_id': 0
-        })
+        await self.mav.action.disarm()

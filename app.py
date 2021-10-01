@@ -1,31 +1,32 @@
-import ssl
-
-import mavsdk
 import asyncio
 
+import mavsdk
+
 from drone import Drone
-from websocket_connection import WebsocketConnection
+from socketio_connection import SocketIOConnection
 import log
 
 # Paths
 LOG = './drone.log'
-CLIENT_CERT_CHAIN = './_ssl/drone.pem'
-CLIENT_CERT_KEY = './_ssl/drone.key'
+SUPER_SECRET_DRONE_KEY_FILE = './drone.key'
 SERVER_URL = 'ws://localhost:8000'
+SERVER_NAMESPACE = '/drone'
 
 
 # Create drone
 async def create_drone():
     log.setup()
-    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    ssl_context.load_default_certs()
-    ssl_context.load_cert_chain(CLIENT_CERT_CHAIN, CLIENT_CERT_KEY)
-    ssl_context.verify_mode = ssl.VerifyMode.CERT_REQUIRED
-    ssl_context.check_hostname = True
-    connection = WebsocketConnection(SERVER_URL, ssl_context)
+
+    # connection to server
+    with open(SUPER_SECRET_DRONE_KEY_FILE) as f:
+        key = f.read()
+    server = SocketIOConnection(SERVER_NAMESPACE, SERVER_URL, key)
+
+    # connection to mav
     system = mavsdk.System()
     await system.connect(system_address="udp://:14540")
-    drone = Drone(system, connection)
+    drone = Drone(system, server)
+
     await drone.heartbeat
 
 
