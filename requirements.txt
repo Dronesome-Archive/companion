@@ -7,3 +7,9 @@ protobuf==3.17.3
 python-engineio==4.2.1
 python-socketio==5.4.0
 six==1.16.0
+haversine==2.3.1
+llvmlite==0.37.0
+numba==0.54.1
+numpy==1.20.3
+opencv-python==4.5.3.56
+protobuf==3.17.3

@@ -38,6 +38,7 @@ class Drone:
     # return True if drone successfully landed on the pad; return False if landing failed (e.g. pad not found)
     async def try_landing(self):
         # TODO: Alex, hier integrieren
+        # si si si 
         pass
 
     # set self.task to new task if status change is valid
