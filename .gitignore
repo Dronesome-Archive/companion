@@ -3,5 +3,11 @@ _venv
 _ssl
 _examples
 _test
+
+env
+scripts
+dataset
+
 drone.log
 
+*.pyd
