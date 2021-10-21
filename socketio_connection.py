@@ -25,7 +25,7 @@ class SocketIOConnection(socketio.AsyncClientNamespace):
     RETRY_DELAY = 10
     MAX_RETRY_DELAY = 40
 
-    def __init__(self, namespace, server_url, key):
+    def __init__(self, namespace):
         socketio.AsyncClientNamespace.__init__(self, namespace)
 
         self.sio = socketio.AsyncClient(
@@ -35,7 +35,6 @@ class SocketIOConnection(socketio.AsyncClientNamespace):
             reconnection_delay_max=SocketIOConnection.MAX_RETRY_DELAY,
             logger=getLogger()  # TODO: how much gets logged?
         )
-        self.sio.connect(server_url, auth=key, namespaces=namespace)
         self.outbox = asyncio.LifoQueue()  # most recent messages get sent first
         self.inbox = asyncio.LifoQueue(maxsize=1)  # every message but the most recent one gets discarded
         self.most_recent_outbound = {enum.value: 0 for enum in ToServer}
@@ -63,7 +62,7 @@ class SocketIOConnection(socketio.AsyncClientNamespace):
     async def on_return(self):
         while not self.inbox.empty():
             await self.inbox.get()
-        await self.inbox.put(InboundMessage(ToDrone.RETURN))
+        await self.inbox.put(InboundMessage(ToDrone.EMERGENCY_RETURN))
 
     # empty inbox and put in the emergency land message
     async def on_emergency_land(self):

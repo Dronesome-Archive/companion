@@ -3,7 +3,7 @@ from enum import Enum
 
 class ToDrone(Enum):
     UPDATE = 'update'
-    RETURN = 'return'
+    EMERGENCY_RETURN = 'emergency_return'
     EMERGENCY_LAND = 'emergency_land'
 
 

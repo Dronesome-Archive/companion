@@ -51,9 +51,9 @@ class Drone:
             (new == self.status_idle and self.status not in [self.status_landing, self.status_updating]) or
             (new == self.status_updating and self.status not in [self.status_idle]) or
             (new == self.status_en_route and self.status not in [self.status_updating]) or
-            (new == self.status_landing and self.status not in [self.status_en_route, self.status_returning]) or
-            (new == self.status_returning and self.status not in [self.status_en_route, self.status_landing]) or
-            (new == self.status_emergency_landing and self.status not in [self.status_en_route, self.status_landing, self.status_returning]) or
+            (new == self.status_landing and self.status not in [self.status_en_route, self.status_emergency_returning]) or
+            (new == self.status_emergency_returning and self.status not in [self.status_en_route, self.status_landing]) or
+            (new == self.status_emergency_landing and self.status not in [self.status_en_route, self.status_landing, self.status_emergency_returning]) or
             (new == self.status_crashed and self.status not in [self.status_emergency_landing])
         ):
             log.warn('status change from', self.status.__name__, 'to', new.__name__, 'rejected')
@@ -92,8 +92,8 @@ class Drone:
             msg = await self.server.inbox.get()
             if msg.msg_type == ToDrone.EMERGENCY_LAND and self.status != self.status_idle:
                 self.set_status(self.status_emergency_landing)
-            elif msg.msg_type == ToDrone.RETURN and self.status != self.status_idle:
-                self.set_status(self.status_returning)
+            elif msg.msg_type == ToDrone.EMERGENCY_RETURN and self.status != self.status_idle:
+                self.set_status(self.status_emergency_returning)
             elif msg.msg_type == ToDrone.UPDATE and self.status == self.status_idle:
                 self.new_mission = mission.Mission(msg.content, self.battery.val.remaining_percent)
                 self.set_status(self.status_updating)
@@ -137,13 +137,13 @@ class Drone:
             self.set_status(self.status_idle)
         elif not self.current_mission.cancelled:
             log.warn('landing failed, returning')
-            self.set_status(self.status_returning)
+            self.set_status(self.status_emergency_returning)
         else:
             log.warn('landing failed, performing emergency landing')
             self.set_status(self.status_emergency_landing)
 
     # reverse self.current_mission, fly and land
-    async def status_returning(self):
+    async def status_emergency_returning(self):
         if (self.current_mission.batteryStart - self.battery.val) * Drone.BATTERY_DRAIN_MULTIPLIER > self.battery.val:
             # abort if battery charge will be insufficient
             log.warn('not enough battery charge, performing emergency landing')

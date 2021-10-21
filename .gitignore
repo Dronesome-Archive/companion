@@ -3,5 +3,4 @@ _venv
 _ssl
 _examples
 _test
-drone.log
-
+log
