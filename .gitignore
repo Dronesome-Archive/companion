@@ -3,4 +3,8 @@ _venv
 _ssl
 _examples
 _test
+env
+scripts
+dataset
 log
+*.pyd
