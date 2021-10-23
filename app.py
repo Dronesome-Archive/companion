@@ -23,6 +23,8 @@ async def create_drone():
     # connection to mav
     system = mavsdk.System()
     await system.connect(system_address="udp://:14540")
+    await system.param.set_param_int('COM_RC_IN_MODE', 2)
+    
     drone = Drone(system, server)
 
     await server.sio.connect(SERVER_URL, auth=environ['SUPER_SECRET_DRONE_KEY'], namespaces=SERVER_NAMESPACE)
