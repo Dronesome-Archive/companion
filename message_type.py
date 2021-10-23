@@ -9,4 +9,4 @@ class ToDrone(Enum):
 
 class ToServer(Enum):
     HEARTBEAT = 'heartbeat'
-    STATUS_UPDATE = 'status_update'
+    STATE_UPDATE = 'state_update'
