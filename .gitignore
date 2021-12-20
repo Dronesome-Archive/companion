@@ -1,8 +1,10 @@
-__pycache__
-_venv
-_ssl
-_examples
-_test
+__pycache__/
+_venv/
+_ssl/
+_examples/
+_test/
+.idea/
+.vscode/
 env
 scripts
 dataset
