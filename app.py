@@ -1,11 +1,9 @@
 import asyncio
 from os import environ
-
-import mavsdk
-
-from drone import Drone
-from socketio_connection import SocketIOConnection
 import log
+
+from mock_drone import Drone
+from socketio_connection import SocketIOConnection
 
 # Paths
 LOG = './drone.log'
@@ -21,9 +19,10 @@ async def create_drone():
     server = SocketIOConnection(SERVER_NAMESPACE)
 
     # connection to mav
-    system = mavsdk.System()
-    await system.connect(system_address="udp://:14540")
-    await system.param.set_param_int('COM_RC_IN_MODE', 2)
+    # system = mavsdk.System()
+    # await system.connect(system_address="udp://:14540")
+    # await system.param.set_param_int('COM_RC_IN_MODE', 2)
+    system = None
     
     drone = Drone(system, server)
 

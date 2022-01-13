@@ -10,3 +10,4 @@ scripts
 dataset
 log
 *.pyd
+run.sh
