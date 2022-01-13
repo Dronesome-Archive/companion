@@ -112,7 +112,7 @@ class Drone:
     async def state_updating(self):
         current_pos = [self.position.val.latitude_deg, self.position.val.longitude_deg]
         start_dist_km = haversine(current_pos, self.new_mission.start.pos)
-        if start_dist_km > Drone.MAX_START_DIST_KM or self.battery.val < Drone.MIN_BATTERY_CHARGE:
+        if start_dist_km > Drone.MAX_START_DIST_KM or self.battery.val.remaining_percent < Drone.MIN_BATTERY_CHARGE:
             log.warn('new mission rejected', self.new_mission.id)
             self.set_state(self.state_idle)
         else:
@@ -153,7 +153,7 @@ class Drone:
 
     # reverse self.current_mission, fly and land
     async def state_emergency_returning(self):
-        if (self.current_mission.batteryStart - self.battery.val) * Drone.BATTERY_DRAIN_MULTIPLIER > self.battery.val:
+        if (self.current_mission.batteryStart - self.battery.val.remaining_percent) * Drone.BATTERY_DRAIN_MULTIPLIER > self.battery.val:
             # abort if battery charge will be insufficient
             log.warn('not enough battery charge, performing emergency landing')
             self.set_state(self.state_emergency_landing)

@@ -12,6 +12,15 @@ class MockValue:
     def __init__(self, val):
         self.val = val
 
+class MockBattery:
+    def __init__(self, percent):
+        self.remaining_percent = percent
+
+class MockPosition:
+    def __init__(self, lat, lon):
+        self.latitude_deg = lat
+        self.longitude_deg = lon
+
 
 class Drone:
     # constants
@@ -21,7 +30,7 @@ class Drone:
     BATTERY_DRAIN_MULTIPLIER = 1.1
 
     # mock
-    STARTING_POSITION = [51.75548871014251, 14.337482007009129]
+    STARTING_POSITION = MockPosition(51.75548871014251, 14.337482007009129)
     SPEED = 20 # m/s
     LANDING_SUCCESS = True
     RETURN_LANDING_SUCCESS = True
@@ -35,7 +44,7 @@ class Drone:
         self.heartbeat = asyncio.create_task(self.send_heartbeat())
         self.server_consumer = asyncio.create_task(self.server_consume())
         self.position = MockValue(Drone.STARTING_POSITION)
-        self.battery = MockValue(1.0)
+        self.battery = MockValue(MockBattery(1.0))
 
         # state
         self.state = None
@@ -87,7 +96,8 @@ class Drone:
         d = haversine(pos0, pos1) * 1000
         t = max(0.1, time() - start)
         p = min(1.0, d / (Drone.SPEED * t))
-        self.position.val = (pos0[0] + (pos1[0] - pos0[0]) * p, pos0[1] + (pos1[1] - pos0[1]) * p)
+        self.position.val.latitude_deg = pos0[0] + (pos1[0] - pos0[0]) * p
+        self.position.val.longitude_deg = pos0[1] + (pos1[1] - pos0[1]) * p
 
         if (p == 1.0):
             i += -1 if reverse else 1
@@ -133,7 +143,7 @@ class Drone:
     async def state_updating(self):
         current_pos = [self.position.val.latitude_deg, self.position.val.longitude_deg]
         start_dist_km = haversine(current_pos, self.new_mission.start.pos)
-        if start_dist_km > Drone.MAX_START_DIST_KM or self.battery.val < Drone.MIN_BATTERY_CHARGE:
+        if start_dist_km > Drone.MAX_START_DIST_KM or self.battery.val.remaining_percent < Drone.MIN_BATTERY_CHARGE:
             log.warn('new mission rejected', self.new_mission.id)
             self.set_state(self.state_idle)
         else:
@@ -172,7 +182,7 @@ class Drone:
 
     # reverse self.current_mission, fly and land
     async def state_emergency_returning(self):
-        if (self.current_mission.batteryStart - self.battery.val) * Drone.BATTERY_DRAIN_MULTIPLIER > self.battery.val:
+        if (self.current_mission.batteryStart - self.battery.val.remaining_percent) * Drone.BATTERY_DRAIN_MULTIPLIER > self.battery.val:
             # abort if battery charge will be insufficient
             log.warn('not enough battery charge, performing emergency landing')
             self.set_state(self.state_emergency_landing)
