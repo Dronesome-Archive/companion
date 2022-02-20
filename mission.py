@@ -12,7 +12,6 @@ class Mission:
 
     # construct Mission instance from an HTTP response
     def __init__(self, raw, battery):
-        self.id = raw['id']
         self.start = Facility(raw['start']['id'], (raw['start']['pos'][0], raw['start']['pos'][1]))
         self.waypoints = [(pos[0], pos[1]) for pos in raw['waypoints']]
         self.goal = Facility(raw['goal']['id'], (raw['goal']['pos'][0], raw['goal']['pos'][1]))
@@ -53,6 +52,6 @@ class Mission:
         for pos in between:
             items.append(self.mission_item(pos, True))
         items.append(self.mission_item(goal.pos, False))
-        distances = [haversine(start_pos, pos) for pos in items]
+        distances = [haversine(start_pos, [item.latitude_deg, item.longitude_deg]) for item in items]
         index_closest = distances.index(min(distances))
         return items[index_closest:]
