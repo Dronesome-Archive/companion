@@ -24,7 +24,7 @@ class Mav():
 
 	async def keep_connected(self):
 		logging.info("connecting...")
-		await self.__mav.connect(system_address='udp://:14540')
+		await self.__mav.connect(system_address='serial:///dev/ttyAMA0')
 		logging.info("connected")
 		await self.__mav.param.set_param_int('COM_RC_IN_MODE', 2)
 		await asyncio.gather(self.__get_battery, self.__get_pos)
