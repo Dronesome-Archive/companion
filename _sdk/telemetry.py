@@ -26,10 +26,12 @@ class Mav():
 
 	async def keep_connected(self):
 		logging.info("connecting...")
-		out = await self.__mav.connect(system_address='serial:///dev/ttyAMA0')
-		logging.info(f"connected: {out}")
-		v = await self.__mav.info.get_version()
-		logging.info(v)
+		await self.__mav.connect(system_address='serial:///dev/ttyAMA0')
+		async for state in self.__mav.core.connection_state():
+			logging.info(state)
+			if state.is_connected:
+				logging.info("connected")
+				break
 		#await self.__mav.param.set_param_int('COM_RC_IN_MODE', 2)
 		await asyncio.gather(self.__get_battery(), self.__get_pos())
 		logging.info("disconnecting")

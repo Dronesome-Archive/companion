@@ -1,15 +1,17 @@
 import asyncio
 import mavsdk
+import logging
 
 async def main():
+	logging.getLogger().setLevel(logging.DEBUG)
 	mav = mavsdk.System()
 	await mav.connect(system_address='serial:///dev/ttyAMA0')
 	async for state in mav.core.connection_state():
-		print(state)
+		logging.info(state)
 		if state.is_connected:
-			print("connected!")
 			break
-	v = await mav.info.get_identification()
-	print(v)
+	async for status in mav.telemetry.battery():
+		logging.info(status)
+	logging.info('bye')
 
 asyncio.run(main())
