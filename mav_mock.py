@@ -11,7 +11,7 @@ class Mav(MavBase):
 	def __init__(self):
 		super().__init__(pos=Mav.STARTING_POS)
 
-	def __flight_step(self, next_item, mission_items):
+	def flight_step(self, next_item, mission_items):
 		pos0 = self.pos
 		pos1 = [mission_items[next_item].latitude_deg, mission_items[next_item].longitude_deg]
 		d = haversine(pos0, pos1) * 1000
@@ -27,7 +27,7 @@ class Mav(MavBase):
 		logging.info(f"executing { [(item.latitude_deg, item.longitude_deg) for item in mission_items] }")
 		while i < len(mission_items):
 			await asyncio.sleep(1)
-			i = self.__flight_step(i, mission_items)
+			i = self.flight_step(i, mission_items)
 
 	async def land(self):
 		logging.info('landing')

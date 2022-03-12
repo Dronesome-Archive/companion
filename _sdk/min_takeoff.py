@@ -38,16 +38,6 @@ async def main():
 		logging.info(progress_data)
 	logging.info("-- Gyroscope calibration finished")
 
-	logging.info("-- Starting accelerometer calibration")
-	async for progress_data in mav.calibration.calibrate_accelerometer():
-		logging.info(progress_data)
-	logging.info("-- Accelerometer calibration finished")
-
-	logging.info("-- Starting magnetometer calibration")
-	async for progress_data in mav.calibration.calibrate_magnetometer():
-		logging.info(progress_data)
-	logging.info("-- Magnetometer calibration finished")
-
 	logging.info("-- Starting board level horizon calibration")
 	async for progress_data in mav.calibration.calibrate_level_horizon():
 		logging.info(progress_data)

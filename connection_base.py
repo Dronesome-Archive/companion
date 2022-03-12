@@ -15,7 +15,7 @@ class ConnectionBase:
 	
 	# send message to server, handle_response and return a bool representing whether sending the message worked
 	async def send(self):
-		logging.error("called abstract function")
+		logging.warning("called abstract function")
 
 	# every heartbeat_duration seconds, return a heartbeat message
 	async def get_heartbeat(self):

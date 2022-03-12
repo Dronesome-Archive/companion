@@ -1,7 +1,6 @@
 import asyncio
 import logging
 
-import mavsdk
 from haversine import haversine
 
 from message_type import ToServer
@@ -14,11 +13,11 @@ class Drone:
 	BATTERY_DRAIN_MULTIPLIER = 1.1
 
 	def __init__(self, mav):
-		self.__state = self.state_idle
-		self.__current_mission = None
+		self.state = self.state_idle
+		self.current_mission = None
 		self.new_mission = None
-		self.__task = None
-		self.__latest_facility = None
+		self.task = None
+		self.latest_facility = None
 		self.outbox = asyncio.Queue()
 		self.mav = mav
 
@@ -40,36 +39,36 @@ class Drone:
 	def set_state(self, new):
 
 		# check if change is valid
-		if self.__state == new:
+		if self.state == new:
 			logging.warning(f'{new.__name__} same as old state')
 			return False
 		if (
-			(new == self.state_idle and self.__state not in [self.state_landing, self.state_return_landing, self.state_updating]) or
-			(new == self.state_updating and self.__state not in [self.state_idle]) or
-			(new == self.state_en_route and self.__state not in [self.state_updating]) or
-			(new == self.state_landing and self.__state not in [self.state_en_route]) or
-			(new == self.state_return_landing and self.__state not in [self.state_emergency_returning]) or
-			(new == self.state_emergency_returning and self.__state not in [self.state_en_route, self.state_landing]) or
-			(new == self.state_emergency_landing and self.__state not in [self.state_en_route, self.state_landing, self.state_return_landing, self.state_emergency_returning]) or
-			(new == self.state_crashed and self.__state not in [self.state_emergency_landing])
+			(new == self.state_idle and self.state not in [self.state_landing, self.state_return_landing, self.state_updating]) or
+			(new == self.state_updating and self.state not in [self.state_idle]) or
+			(new == self.state_en_route and self.state not in [self.state_updating]) or
+			(new == self.state_landing and self.state not in [self.state_en_route]) or
+			(new == self.state_return_landing and self.state not in [self.state_emergency_returning]) or
+			(new == self.state_emergency_returning and self.state not in [self.state_en_route, self.state_landing]) or
+			(new == self.state_emergency_landing and self.state not in [self.state_en_route, self.state_landing, self.state_return_landing, self.state_emergency_returning]) or
+			(new == self.state_crashed and self.state not in [self.state_emergency_landing])
 		):
-			logging.warning(f'state change from {self.__state.__name__} to {new.__name__} rejected')
+			logging.warning(f'state change from {self.state.__name__} to {new.__name__} rejected')
 			return False
 
 		# change state
-		logging.info(f'state change from {self.__state.__name__} to {new.__name__}')
-		self.__state = new
-		if self.__task:
-			self.__task.cancel()
-		self.__task = asyncio.create_task(self.__state())
-		self.__task.add_done_callback(self.__handle_task_result)
+		logging.info(f'state change from {self.state.__name__} to {new.__name__}')
+		self.state = new
+		if self.task:
+			self.task.cancel()
+		self.task = asyncio.create_task(self.state())
+		self.task.add_done_callback(self.__handle_task_result)
 		if not self.outbox.empty():
 			self.outbox.get_nowait()
 		self.outbox.put_nowait({
 			'type': ToServer.STATE_UPDATE.value,
 			'state': new.__name__[6:],
-			'latest_facility_id': self.__latest_facility.id if self.__latest_facility else None,
-			'goal_facility_id': self.__current_mission.goal.id if self.__current_mission else None
+			'latest_facility_id': self.latest_facility.id if self.latest_facility else None,
+			'goal_facility_id': self.current_mission.goal.id if self.current_mission else None
 		})
 		return True
 
@@ -90,19 +89,19 @@ class Drone:
 			self.set_state(self.state_idle)
 		else:
 			logging.info(f'new mission')
-			self.__current_mission = self.new_mission
+			self.current_mission = self.new_mission
 			self.set_state(self.state_en_route)
 
 	# arm drone, fly self.current_mission and try landing when finished
 	async def state_en_route(self):
-		await self.mav.execute_mission(self.__current_mission.get_items())
+		await self.mav.execute_mission(self.current_mission.get_items())
 		self.set_state(self.state_landing)
 
 	# attempt first landing and handle failure
 	async def state_landing(self):
 		if await self.__try_landing():
-			logging.info(f'landed on {self.__current_mission.goal.id}')
-			self.__latest_facility = self.__current_mission.goal
+			logging.info(f'landed on {self.current_mission.goal.id}')
+			self.latest_facility = self.current_mission.goal
 			self.set_state(self.state_idle)
 		else:
 			logging.warning('landing failed, returning')
@@ -111,8 +110,8 @@ class Drone:
 	# attempt second landing and handle failure
 	async def state_return_landing(self):
 		if await self.__try_landing():
-			logging.info(f'landed on {self.__current_mission.start.id}')
-			self.__latest_facility = self.__current_mission.start
+			logging.info(f'landed on {self.current_mission.start.id}')
+			self.latest_facility = self.current_mission.start
 			self.set_state(self.state_idle)
 		else:
 			logging.warning('landing failed, performing emergency landing')
@@ -120,13 +119,13 @@ class Drone:
 
 	# reverse self.current_mission, fly and land
 	async def state_emergency_returning(self):
-		battery_used = self.__current_mission.batteryStart - self.mav.battery
+		battery_used = self.current_mission.batteryStart - self.mav.battery
 		if battery_used * Drone.BATTERY_DRAIN_MULTIPLIER > self.mav.battery:
 			# abort if battery charge will be insufficient
 			logging.warning('not enough battery charge, performing emergency landing')
 			self.set_state(self.state_emergency_landing)
 		else:
-			await self.mav.execute_mission(self.__current_mission.get_items(True, self.mav.pos))
+			await self.mav.execute_mission(self.current_mission.get_items(True, self.mav.pos))
 			self.set_state(self.state_return_landing)
 
 	# fuck it, we landing
