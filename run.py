@@ -1,8 +1,8 @@
 import asyncio
 import logging
 
-from mav_mock import Mav
-from server_connection import ServerConnection
+from mav import Mav
+from connection_mock import Connection
 from drone import Drone
 
 
@@ -21,7 +21,7 @@ async def main():
 	configure_logging()
 	mav = Mav()
 	drone = Drone(mav)
-	server_connection = ServerConnection(drone)
+	server_connection = Connection(drone)
 	await asyncio.gather(server_connection.produce(), mav.keep_connected())
 
 

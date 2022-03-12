@@ -10,6 +10,8 @@ async def main():
 		logging.info(state)
 		if state.is_connected:
 			break
+	await mav.param.set_param_int('COM_RC_IN_MODE', 2)
+	logging.info('changed param')
 	async for status in mav.telemetry.battery():
 		logging.info(status)
 	logging.info('bye')

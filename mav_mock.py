@@ -9,8 +9,7 @@ class Mav(MavBase):
 	SPEED_MS = 40 # m/s
 
 	def __init__(self):
-		self.battery = 1.0 # 0.0 - 1.0
-		self.pos = Mav.STARTING_POS # lat, lon
+		super().__init__(pos=Mav.STARTING_POS)
 
 	def __flight_step(self, next_item, mission_items):
 		pos0 = self.pos

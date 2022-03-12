@@ -1,4 +1,6 @@
 import asyncio
+import logging
+
 import mavsdk
 
 from mav_base import MavBase
@@ -6,21 +8,29 @@ from mav_base import MavBase
 class Mav(MavBase):
 	def __init__(self):
 		self.__mav = mavsdk.System()
-		self.battery = 1.0 # 0.0 - 1.0
-		self.pos = [0.0, 0.0] # lat, lon
+		super().__init__()
 	
 	async def __get_battery(self):
-		async for val in self.__mav.telemetry.battery:
+		async for val in self.__mav.telemetry.battery():
+			logging.info(f"val: {val}")
 			self.battery = val.remaining_percent
+			logging.info(f"new battery: {self.battery}")
 
 	async def __get_pos(self):
-		async for val in self.__mav.telemetry.pos:
+		async for val in self.__mav.telemetry.position():
+			logging.info(f"val: {val}")
 			self.pos = [val.latitude_deg, val.longitude_deg]
+			logging.info(f"new pos: {self.pos}")
 
 	async def keep_connected(self):
-		await self.__mav.connect(system_address='udp://:14540')
+		await self.__mav.connect(system_address='serial:///dev/ttyAMA0')
+		async for state in self.__mav.core.connection_state():
+			logging.info(f"connection state: {state}")
+			if state.is_connected:
+				break
+		logging.info("connected!")
 		await self.__mav.param.set_param_int('COM_RC_IN_MODE', 2)
-		await asyncio.gather(self.__get_battery, self.__get_pos)
+		await asyncio.gather(self.__get_battery(), self.__get_pos())
 
 	async def execute_mission(self, mission_items):
 		mission_plan = mavsdk.mission.MissionPlan(mission_items)
