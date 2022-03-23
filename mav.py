@@ -4,6 +4,7 @@ import logging
 import mavsdk
 
 from mav_base import MavBase
+from landing import do_landing
 
 class Mav(MavBase):
 	def __init__(self):
@@ -68,7 +69,8 @@ class Mav(MavBase):
 				return
 
 	async def land(self):
-		await self.__mav.land()
+		# await do_landing(**{"mav": self, "mavsdk_system": self.__mav})
+		await self.__mav.action.land()
 
 	async def disarm(self):
 		await self.__mav.action.disarm()

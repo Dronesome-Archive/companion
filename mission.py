@@ -6,8 +6,8 @@ from facility import Facility
 
 # equivalent to mavsdk.mission: one flight, from takeoff to landed
 class Mission:
-    RELATIVE_ALTITUDE = 30
-    SPEED = 10
+    RELATIVE_ALTITUDE = 3
+    SPEED = 0.3
     ACCEPTANCE_RADIUS = 10
 
     # construct Mission instance from an HTTP response
