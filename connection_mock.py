@@ -13,7 +13,7 @@ class Connection(ConnectionBase):
 	async def send(self, dict):
 		logging.info(f'sending {dict}')
 		self.messages_sent += 1
-		if self.messages_sent == 3:
+		if False and self.messages_sent == 3:
 			res = {
 				"type": "update",
 				"start": { # sportplatz, earth route bei alex

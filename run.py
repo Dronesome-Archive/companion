@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from mav import Mav
+from mav_mock import Mav
 from connection_mock import Connection
 from drone import Drone
 
@@ -19,6 +19,7 @@ def configure_logging():
 
 async def main():
 	configure_logging()
+	logging.info("configured logging")
 	mav = Mav()
 	await mav.init_connection()
 	drone = Drone(mav)

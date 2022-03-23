@@ -4,7 +4,7 @@ import logging
 import mavsdk
 
 from mav_base import MavBase
-from landing import do_landing
+#from landing import do_landing
 
 class Mav(MavBase):
 	def __init__(self):
@@ -26,6 +26,7 @@ class Mav(MavBase):
 	async def init_connection(self):
 		# connect
 		await self.__mav.connect(system_address='serial:///dev/ttyAMA0')
+		logging.info("waiting for connection state...")
 		async for state in self.__mav.core.connection_state():
 			logging.info(f"connection state: {state}")
 			if state.is_connected:
@@ -39,7 +40,7 @@ class Mav(MavBase):
 		# calibrate
 		logging.info("starting gyroscope calibration")
 		async for progress_data in self.__mav.calibration.calibrate_gyro():
-			logging.debug(progress_data)
+			logging.info(progress_data)
 		logging.info("gyroscope calibration finished")
 		logging.info("starting board level horizon calibration")
 		async for progress_data in self.__mav.calibration.calibrate_level_horizon():
