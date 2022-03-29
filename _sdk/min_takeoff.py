@@ -4,7 +4,7 @@ import logging
 
 async def status_text(mav):
 	async for status in mav.telemetry.status_text():
-		logging.info(status)
+		logging.info(f"-- Status: {status}")
 
 async def main():
 	logging.getLogger().setLevel(logging.DEBUG)
@@ -12,6 +12,7 @@ async def main():
 	# connect mav
 	mav = mavsdk.System()
 	await mav.connect(system_address='serial:///dev/ttyAMA0')
+	logging.info("awaiting connection... (remember to sudo!)")
 	async for state in mav.core.connection_state():
 		logging.info(state)
 		if state.is_connected:
