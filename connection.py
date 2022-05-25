@@ -1,5 +1,6 @@
 import ssl
 import aiohttp
+import asyncio
 import logging
 from time import time
 
@@ -14,7 +15,7 @@ class Connection(ConnectionBase):
 	TIMEOUT = 10
 
 	def __init__(self, companion):
-		super().__init__(companion, time() - Connection.HEARTBEAT_DURATION)
+		super().__init__(companion, Connection.HEARTBEAT_DURATION)
 
 	# see ConnectionBase
 	async def send(self, dict):
@@ -38,7 +39,7 @@ class Connection(ConnectionBase):
 			except aiohttp.ClientConnectionError as e:
 				logging.warning(f'connection error {e}')
 				return False
-			except TimeoutError as e:
+			except asyncio.exceptions.TimeoutError as e:
 				logging.warning(f'timeout error {e}')
 				return False
 		return True

@@ -31,7 +31,8 @@ class Mission:
             float('nan'),
             float('nan'),
             Mission.ACCEPTANCE_RADIUS,
-            float('nan')
+            float('nan'),
+			float('nan')
         )
 
     # get list of mavsdk.mission.MissionItem according to self.waypoints
