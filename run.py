@@ -1,9 +1,12 @@
 import asyncio
 import logging
+import sys
 
-from mav_mock import Mav
-from connection_mock import Connection
 from drone import Drone
+from mav import Mav
+from mav_mock import Mav as MavMock
+from connection import Connection
+from connection_mock import Connection as ConnectionMock
 
 
 LOG = './drone.log'
@@ -20,10 +23,22 @@ def configure_logging():
 async def main():
 	configure_logging()
 	logging.info("configured logging")
-	mav = Mav()
+
+	if '--mockmav' in sys.argv[1:]:
+		mav = MavMock()
+		logging.info('mocking mav')
+	else:
+		mav = Mav()
 	await mav.init_connection()
+
 	drone = Drone(mav)
-	server_connection = Connection(drone)
+
+	if '--mockconn' in sys.argv[1:]:
+		server_connection = ConnectionMock(drone)
+		logging.info('mocking connection')
+	else:
+		server_connection = Connection(drone)
+
 	await asyncio.gather(server_connection.produce(), mav.gather_telemetry())
 
 
